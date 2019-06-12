@@ -11,7 +11,7 @@ from utils import timer
 features_folder = "data/features/"
 
 fc_parameters = {
-    "length": None,
+    # "length": None,
     "sum_values": None,
     "minimum": None,
     "maximum": None,
@@ -29,20 +29,28 @@ fc_parameters = {
     # "quantile": [{"q": q} for q in [.1, .2, .3, .4, .6, .7, .8, .9]]
 }
 
-REGENERATE = True
+kind_to_fc_parameters = {
+    "acceleration_abs": fc_parameters,
+    "gyro_abs": fc_parameters,
+    "Speed": fc_parameters,
+    "seconds_copy": {"maximum": None}
+}
+
+REGENERATE = False
 
 if REGENERATE:
-    dfs = [pd.read_csv("data/features/" + f) for f in os.listdir("data/features")]
+    dfs = [pd.read_csv("data/features/" + f) for f in os.listdir("data/features") if f.endswith(".csv")]
     features = pd.concat(dfs, ignore_index=True)
 
     # some feature engineering
     features['acceleration_abs'] = np.sqrt(features['acceleration_x']**2 + features['acceleration_y']**2 + features['acceleration_z']**2)
     features['gyro_abs'] = np.sqrt(features['gyro_x']**2 + features['gyro_y']**2 + features['gyro_z']**2)    
-
+    features['seconds_copy'] = features['second']
 
     with timer("tsfresh extracting features"):
-        extracted_features = extract_features(features.drop(['Accuracy'], axis=1), column_id="bookingID", column_sort="second", default_fc_parameters = fc_parameters)
+        extracted_features = extract_features(features, column_id="bookingID", column_sort="second", default_fc_parameters = {}, kind_to_fc_parameters=kind_to_fc_parameters)
 
+# .drop(['Accuracy'], axis=1)
     # print("len1", len(extracted_features))
     # # engineer some aggregate features
     # custom_agg_features = features.groupby("bookingID").agg({"second": np.max}).reset_index().rename(columns={"second": "trip_duration"})
@@ -52,16 +60,17 @@ if REGENERATE:
     # extracted_features = extracted_features.merge(custom_agg_features, left_index=True, right_on="bookingID", how="left")
     # print("len3", len(extracted_features))
 
-    # clean off some useless features
-    # extracted_features = extracted_features.drop(["Accuracy__maximum", "Accuracy__minimum", "Accuracy__standard_deviation", "Accuracy__sum_values"], axis=1)
+    # # clean off some useless features
+    # extracted_features = extracted_features.drop(["Speed__number_cwt_peaks__n_5"], axis=1)
 
 
     labels = pd.read_csv("data/cleaned_labels.csv")
     combined = extracted_features.merge(labels, left_index=True, right_on="bookingID", how="left")
     print("len4", len(combined))
-    combined.to_csv("generated_data/tsfresh_features_v3.csv", index=False)
+    combined.to_csv("generated_data/tsfresh_features_v4.csv", index=False)
 
-combined = pd.read_csv("generated_data/tsfresh_features_v3.csv")
+combined = pd.read_csv("generated_data/tsfresh_features_v4.csv")
+# combined = combined.drop(["seconds_copy__maximum"], axis=1)
 
 print("columns:", combined.columns)
 x = combined.drop(['bookingID', 'label'], axis=1)
@@ -69,32 +78,38 @@ y = combined.label.values
 
 x_train, x_valid, y_train, y_valid = train_test_split(x, y, test_size=0.33, shuffle=True, random_state=42)
 
-
+####################
+# from sklearn.model_selection import cross_val_score
+# from sklearn.linear_model import Ridge, Lasso, LogisticRegression
+# logr = LogisticRegression(random_state=42, solver="lbfgs")
+# print(cross_val_score(logr, X=x, y=y, cv=5, scoring="roc_auc"))
 ############### Linear models
-# from sklearn.linear_model import Ridge, Lasso
+# from sklearn.linear_model import Ridge, Lasso, LogisticRegression
 
-# model = Lasso(alpha=0.001)
+# # model = Lasso(alpha=0.001)
+# model = LogisticRegression(random_state=0, solver='liblinear')
 # model.fit(x_train, y_train)
 # y_valid_pred = model.predict(x_valid)
 #################
 
 ############### lgb
 params = {
-    "num_leaves": 16,
+    "num_leaves": 12,
     "objective": "binary",
-    "max_depth": 5,
-    "learning_rate": 0.003,
+    "max_depth": 4,
+    "learning_rate": 0.005,
     "boosting_type": "gbdt",
-    # "feature_fraction": 0.7,
+    "feature_fraction": 0.7,
     # "bagging_fraction": 0.7,
     # "bagging_freq": 1,
     # "lambda_l1": 0.1,
     # "lambda_l2": 0.1,
     "random_state": 10000019,
     # "verbosity": 1,
-    "num_boost_round": 1000,
+    "num_boost_round": 700,
     "metric": "auc",
-    # "scale_pos_weight": 4,
+    # "metric": "binary_logloss",
+    "scale_pos_weight": 4,
 }
 
 d_train = lgb.Dataset(x_train, label=y_train)
@@ -109,5 +124,12 @@ print(cv_score)
 
 rounded_y_valid_preds = np.round(np.clip(y_valid_pred, 0, 1))
 from sklearn.metrics import accuracy_score
-acc = accuracy_score(y_valid, rounded_y_valid_preds)
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+acc = accuracy_score(y_valid, scaler.fit_transform(rounded_y_valid_preds.reshape(-1, 1)))
 print("accuracy: ", acc)
+
+# # Plot importance
+# import matplotlib.pyplot as plt
+# lgb.plot_importance(model, max_num_features=20, importance_type="gain")
+# plt.show()
