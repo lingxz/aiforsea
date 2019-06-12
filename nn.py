@@ -22,6 +22,7 @@ from keras.utils import to_categorical
 import concurrent.futures
 from multiprocessing import Process, Queue, current_process, freeze_support
 from keras.preprocessing.sequence import pad_sequences
+from sklearn.model_selection import train_test_split
 
 
 def build_model16(num_samples, num_channels):
@@ -59,12 +60,16 @@ def build_model16(num_samples, num_channels):
     print(model.summary())
     return model
 
-def get_ts_array(ts, labels):
+def get_ts_array(ts, meta, labels):
     max_len = 1000
-    ts = ts[ts["bookingID"].isin(labels["bookingID"])]
+    # ts = ts[ts["bookingID"].isin(labels["bookingID"])]
     ts = ts.groupby("bookingID").agg(list).reset_index()
+    ts = labels.merge(ts, on="bookingID", how="left").merge(meta, on="bookingID", how="left")
+
     booking_id = ts['bookingID']
-    ts = ts.drop(['bookingID'], axis=1)
+    labels = ts['label']
+    arr_meta = ts[meta.columns].values
+    ts = ts.drop(['bookingID'] + list(meta.columns), axis=1)
     arr = np.zeros((ts.shape[0], ts.shape[1], max_len))
     print(ts.columns)
     for i, col in enumerate(ts.columns):
@@ -73,14 +78,18 @@ def get_ts_array(ts, labels):
         padded_seq = pad_sequences(seq, maxlen=1000, dtype = "float64", padding="pre", truncating="post")
         arr[:,i,:] = padded_seq
     print(arr.shape)
+    return arr_ts, arr_meta, booking_id, labels
 
 
 dfs = [pd.read_csv("data/features/" + f) for f in os.listdir("data/features") if f.endswith(".csv")]
 features = pd.concat(dfs, ignore_index=True)
 labels = pd.read_csv("data/cleaned_labels.csv")
+combined = pd.read_csv("generated_data/tsfresh_features_v1.csv")
 
-input_ts = get_ts_array(features, labels)
+input_ts, input_meta, booking_id, y = get_ts_array(features, combined, labels)
+input_ts_train, input_meta_train, booking_id_train, y_train, input_ts_test, input_meta_test, booking_id_test, y_test = train_test_split(input_ts, input_meta, booking_id, y, test_size=0.33, shuffle=True, random_state=42)
 
+model.fit([input_ts, input_meta], y_train, batch_size=64, epochs=3, verbose=1)
 
 # history=model.fit([sr,sr0,srv,train_meta,train_switch],train_y, batch_size=64,epochs=1,
 #                                 validation_data=([validate_timeseries,validate_timeseries0,validate_void,
