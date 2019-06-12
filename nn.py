@@ -99,22 +99,19 @@ labels = pd.read_csv("data/cleaned_labels.csv")
 combined = pd.read_csv("generated_data/tsfresh_features_v4.csv")
 
 input_ts, input_meta, booking_id, y = get_ts_array(features, combined.drop(['label'], axis=1), labels)
-print("input_meta_shape", input_meta.shape)
 input_ts_train, input_ts_test, input_meta_train, input_meta_test, booking_id_train, booking_id_test, y_train, y_test = train_test_split(input_ts, input_meta, booking_id, y, test_size=0.33, shuffle=True, random_state=42)
-print("input_meta_shape2", input_meta_train.shape)
 
 print("input_ts shape", input_ts.shape)
-model = build_model16(MAX_LEN, input_ts.shape[1], input_meta.shape[1])
-
 
 y_preds_all = np.zeros(len(y_test))
 for _ in range(8):
+    model = build_model16(MAX_LEN, input_ts.shape[1], input_meta.shape[1])
     # with timer("NN training"):
     model.fit([np.transpose(input_ts_train, (0, 2, 1)), input_meta_train], y_train, batch_size=64, epochs=3, verbose=1)
 
     # with timer("NN Predict"):
     y_preds = model.predict([np.transpose(input_ts_test, (0, 2, 1)), input_meta_test], batch_size=64)
-    y_preds_all += y_preds/8
+    y_preds_all += y_preds/8.
 
 
 from sklearn.metrics import roc_auc_score
