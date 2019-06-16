@@ -75,12 +75,12 @@ def get_ts_array(ts, meta):
     arr_meta = meta_scaler.fit_transform(arr_meta)
 
     arr = np.zeros((ts.shape[0], ts.shape[1], max_len))
-    for i, col in enumerate(ts.columns):
-        print(i, col)
-        padded_seq = pad_sequences(list(ts[col]), maxlen=max_len, dtype = "float64", padding="post", truncating="post")
-        ts_scaler = StandardScaler()
-        padded_seq = ts_scaler.fit_transform(padded_seq)
-        arr[:,i,:] = padded_seq
+    with timer("prepare and pad time series"):
+        for i, col in enumerate(ts.columns):
+            padded_seq = pad_sequences(list(ts[col]), maxlen=max_len, dtype = "float64", padding="post", truncating="post")
+            ts_scaler = StandardScaler()
+            padded_seq = ts_scaler.fit_transform(padded_seq)
+            arr[:,i,:] = padded_seq
 
     return arr.astype('float32'), arr_meta.astype('float32'), booking_id
 
@@ -138,6 +138,5 @@ if __name__ == '__main__':
     parser.add_argument('--validate', type=float, action='store', dest='validate', default=0, help='optional, fraction of the training set that you want to validate on (default: 0)')
     parser.add_argument('--allow_cached', action='store_true', help='optional, allow to use cached tsfresh features to avoid recalculating (default: false)')
     args = parser.parse_args()
-
 
     train_nn(args.feature_folder, args.label_file, args.validate, args.allow_cached)

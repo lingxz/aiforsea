@@ -33,7 +33,7 @@ def decide_label(x):
 def clean_labels(labels):
     labels = labels.groupby("bookingID").agg("mean").reset_index()
     labels['label'] = labels['label'].map(decide_label).map(int)
-    labels[['bookingID', 'label']].to_csv(f"{GENERATED_DATA_FOLDER}/cleaned_labels.csv", index=False)
+    # labels[['bookingID', 'label']].to_csv(f"{GENERATED_DATA_FOLDER}/cleaned_labels.csv", index=False)
     return labels[['bookingID', 'label']]
 
 

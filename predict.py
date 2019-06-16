@@ -26,7 +26,6 @@ def predict(feature_folder):
     print("Start predicting LGB")
     for f in tqdm(lgb_files):
         model = lgb.Booster(model_file=os.path.join(LGB_MODELS, f))
-        # d_test = lgb.Dataset(meta)
         lgb_preds.append(model.predict(meta))
 
     # cnn predictions
@@ -46,8 +45,8 @@ def predict(feature_folder):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--feature_folder', type=str, action='store', dest='feature_folder', required=True)
-    parser.add_argument('--label', type=str, action='store', dest='label_file')
+    parser.add_argument('--feature_folder', type=str, action='store', dest='feature_folder', required=True, help='folder where the time series csvs are stored')
+    parser.add_argument('--label', type=str, action='store', dest='label_file', help='optional, csv file of the labels')
     args = parser.parse_args()
 
     preds = predict(args.feature_folder)

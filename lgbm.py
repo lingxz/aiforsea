@@ -86,11 +86,9 @@ def train_lgb(feature_folder, label_file, validate=0.3, allow_cached=True):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--feature_folder', type=str, action='store', dest='feature_folder', required=True)
-    parser.add_argument('--label', type=str, action='store', dest='label_file', required=True)
-    parser.add_argument('--validate', type=float, action='store', dest='validate', default=0)
-    parser.add_argument('--allow_cached', action='store_true')
-    # feature_folder = "data/features"
-    # label_file = "data/cleaned_labels.csv"
+    parser.add_argument('--feature_folder', type=str, action='store', dest='feature_folder', required=True, help='folder where the time series csvs are stored')
+    parser.add_argument('--label', type=str, action='store', dest='label_file', required=True, help='csv file of the labels')
+    parser.add_argument('--validate', type=float, action='store', dest='validate', default=0, help='optional, fraction of the training set that you want to validate on (default: 0)')
+    parser.add_argument('--allow_cached', action='store_true', help='optional, allow to use cached tsfresh features to avoid recalculating (default: false)')
     args = parser.parse_args()
     train_lgb(args.feature_folder, args.label_file, args.validate, args.allow_cached)
