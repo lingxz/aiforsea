@@ -110,7 +110,7 @@ def train_nn(feature_folder, label_file, validate=0.33, allow_cached=True):
     labels = pd.read_csv(label_file)  # TODO: deduplicate
     labels = clean_labels(labels)
 
-    meta = preprocess(features, allow_cached=True)
+    meta = preprocess(features, allow_cached=allow_cached)
     input_ts, input_meta, booking_id = get_ts_array(features, meta)
     y = pd.DataFrame({"bookingID": booking_id}).merge(labels, on="bookingID", how="left").label.values
 

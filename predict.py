@@ -15,8 +15,8 @@ from utils import *
 def predict(feature_folder):
     print("Begin preprocessing...")
     features = combine_csvs(feature_folder)
-    # meta = preprocess(features)
-    meta = pd.read_csv(f"{GENERATED_DATA_FOLDER}/tsfresh_features_v5.csv")
+    # meta = preprocess(features, allow_cached=False)
+    meta = pd.read_csv("generated_data/tsfresh_features.csv")
     booking_id = meta['bookingID']
     lgb_preds = []
     nn_preds = []

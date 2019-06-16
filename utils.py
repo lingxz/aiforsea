@@ -37,7 +37,7 @@ def clean_labels(labels):
     return labels[['bookingID', 'label']]
 
 
-def preprocess(features, allow_cached=True):
+def preprocess(features, allow_cached=False):
     output_file = PREPROCESSED_FEATURE
     if allow_cached and os.path.isfile(output_file):
         return pd.read_csv(output_file)

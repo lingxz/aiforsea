@@ -39,7 +39,7 @@ def kfold_lightgbm(x, y, lgb_params, num_folds=5):
 
 def train_lgb(feature_folder, label_file, validate=0.3, allow_cached=True):
     features = combine_csvs(feature_folder)
-    combined = preprocess(features, allow_cached=True)
+    combined = preprocess(features, allow_cached=allow_cached)
     labels = pd.read_csv(label_file)
     labels = clean_labels(labels)
     combined = combined.merge(labels, on="bookingID", how="left")
