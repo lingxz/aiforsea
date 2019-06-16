@@ -10,6 +10,11 @@ This solution blends 2 kinds of models: 5 fold LightGBM and 16 bagged CNNs. The 
 
 python>=3.6
 
+packages needed for prediction: 
+
+`pip install pandas keras tqdm scikit-learn tensorflow lightgbm`
+
+
 ## How to predict
 
 The models are pretrained. To predict, do:
